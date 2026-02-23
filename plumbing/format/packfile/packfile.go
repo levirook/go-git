@@ -179,6 +179,15 @@ func (p *Packfile) get(h plumbing.Hash) (plumbing.EncodedObject, error) {
 
 // getByOffset is not threat-safe, and should only be called within packfile.go.
 func (p *Packfile) getByOffset(offset int64) (plumbing.EncodedObject, error) {
+	h, err := p.FindHash(offset)
+	if err != nil {
+		return nil, err
+	}
+
+	if obj, ok := p.cache.Get(h); ok {
+		return obj, nil
+	}
+
 	oh, err := p.headerFromOffset(offset)
 	if err != nil {
 		return nil, err
