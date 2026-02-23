@@ -320,6 +320,18 @@ func TestSupportsExtension(t *testing.T) {
 			value: "sha1",
 			want:  false,
 		},
+		{
+			name:  "refstorage with reftable",
+			ext:   "refstorage",
+			value: "reftable",
+			want:  true,
+		},
+		{
+			name:  "refstorage with unsupported value",
+			ext:   "refstorage",
+			value: "files",
+			want:  false,
+		},
 	}
 
 	for _, tt := range tests {

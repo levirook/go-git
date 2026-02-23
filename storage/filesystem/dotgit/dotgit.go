@@ -713,6 +713,10 @@ func (d *DotGit) checkReferenceAndTruncate(f billy.File, old *plumbing.Reference
 }
 
 func (d *DotGit) SetRef(r, old *plumbing.Reference) error {
+	if d.isReftable() {
+		return ErrReftableNotSupported
+	}
+
 	var content string
 	switch r.Type() {
 	case plumbing.SymbolicReference:
@@ -729,6 +733,10 @@ func (d *DotGit) SetRef(r, old *plumbing.Reference) error {
 // Refs scans the git directory collecting references, which it returns.
 // Symbolic references are resolved and included in the output.
 func (d *DotGit) Refs() ([]*plumbing.Reference, error) {
+	if d.isReftable() {
+		return d.reftableRefs()
+	}
+
 	var refs []*plumbing.Reference
 	seen := make(map[plumbing.ReferenceName]bool)
 	if err := d.addRefFromHEAD(&refs); err != nil {
@@ -748,6 +756,10 @@ func (d *DotGit) Refs() ([]*plumbing.Reference, error) {
 
 // Ref returns the reference for a given reference name.
 func (d *DotGit) Ref(name plumbing.ReferenceName) (*plumbing.Reference, error) {
+	if d.isReftable() {
+		return d.reftableLookupRef(name)
+	}
+
 	ref, err := d.readReferenceFile(".", name.String())
 	if err == nil {
 		return ref, nil
@@ -811,6 +823,10 @@ func (d *DotGit) packedRef(name plumbing.ReferenceName) (*plumbing.Reference, er
 
 // RemoveRef removes a reference by name.
 func (d *DotGit) RemoveRef(name plumbing.ReferenceName) error {
+	if d.isReftable() {
+		return ErrReftableNotSupported
+	}
+
 	path := d.fs.Join(".", name.String())
 	_, err := d.fs.Stat(path)
 	if err == nil {
@@ -1057,6 +1073,11 @@ func (d *DotGit) readReferenceFile(path, name string) (ref *plumbing.Reference, 
 }
 
 func (d *DotGit) CountLooseRefs() (int, error) {
+	if d.isReftable() {
+		// Reftable repos have no loose refs.
+		return 0, nil
+	}
+
 	var refs []*plumbing.Reference
 	seen := make(map[plumbing.ReferenceName]bool)
 	if err := d.addRefsFromRefDir(&refs, seen); err != nil {
@@ -1082,6 +1103,10 @@ func (d *DotGit) CountLooseRefs() (int, error) {
 // When `all` is false, it would only pack refs that have already been
 // packed, plus all tags.
 func (d *DotGit) PackRefs() (err error) {
+	if d.isReftable() {
+		return ErrReftableNotSupported
+	}
+
 	// Lock packed-refs, and create it if it doesn't exist yet.
 	f, err := d.openAndLockPackedRefs(true)
 	if err != nil {
