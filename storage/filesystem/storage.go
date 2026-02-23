@@ -159,13 +159,16 @@ func (s *Storage) SetObjectFormat(of formatcfg.ObjectFormat) error {
 // SupportsExtension checks whether the Storer supports the given
 // Git extension defined by name.
 func (s *Storage) SupportsExtension(name, value string) bool {
-	if name != "objectformat" {
-		return false
-	}
-
-	switch value {
-	case "sha1", "sha256", "":
-		return true
+	switch name {
+	case "objectformat":
+		switch value {
+		case "sha1", "sha256", "":
+			return true
+		default:
+			return false
+		}
+	case "refstorage":
+		return value == "reftable"
 	default:
 		return false
 	}
